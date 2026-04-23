@@ -560,6 +560,21 @@ function sendSocketPong(socket, payload) {
   socket.write(encodeFrame(0xA, payload));
 }
 
+function clearParticipantLocation(room, participant, reason) {
+  participant.lastHeartbeatAt = Date.now();
+  participant.location = null;
+
+  writeAuditLog('location_cleared', {
+    roomId: room.roomId,
+    participantId: participant.participantId,
+    inviteCode: room.inviteCode,
+    remoteAddress: participant.lastRemoteAddress,
+    reason
+  });
+
+  broadcastRoomUpdate(room);
+}
+
 function handleSocketPayload(room, participant, payload) {
   let message;
 
@@ -587,6 +602,11 @@ function handleSocketPayload(room, participant, payload) {
   if (message.type === 'leave') {
     participant.removalReason = 'socket_leave';
     removeParticipant(room, participant.participantId);
+    return;
+  }
+
+  if (message.type === 'location:clear') {
+    clearParticipantLocation(room, participant, 'socket_clear');
     return;
   }
 

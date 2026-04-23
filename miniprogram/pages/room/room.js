@@ -8,6 +8,7 @@ const {
 } = require('../../utils/privacy');
 
 const SOCKET_TIMEOUT_MS = 4000;
+const SOCKET_CLOSE_GRACE_MS = 120;
 
 function formatNumber(number) {
   return Number(number).toFixed(6);
@@ -23,6 +24,12 @@ function formatTime(timestamp) {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 Page({
@@ -67,6 +74,8 @@ Page({
     this.socketTask = null;
     this.socketConnectInFlight = false;
     this.socketErrorPrompted = false;
+    this.sessionStatusCheckInFlight = false;
+    this.sessionExpiredRedirecting = false;
     this.mapContext = wx.createMapContext('liveMap', this);
 
     this.setData({
@@ -99,9 +108,7 @@ Page({
       wx.requirePrivacyAuthorize({
         success: () => this.requestLocationPermission(),
         fail: () => {
-          this.setData({
-            locationStatus: '未通过隐私授权'
-          });
+          this.clearSharedLocation('未通过隐私授权');
         }
       });
       return;
@@ -122,9 +129,7 @@ Page({
           scope: 'scope.userLocation',
           success: () => this.startLocationUpdates(),
           fail: () => {
-            this.setData({
-              locationStatus: '定位权限未开启'
-            });
+            this.clearSharedLocation('定位权限未开启');
 
             wx.showModal({
               title: '需要定位权限',
@@ -136,7 +141,10 @@ Page({
                     success: (openResult) => {
                       if (openResult.authSetting['scope.userLocation']) {
                         this.startLocationUpdates();
+                        return;
                       }
+
+                      this.clearSharedLocation('定位权限未开启');
                     }
                   });
                 }
@@ -166,11 +174,56 @@ Page({
         });
       },
       fail: () => {
-        this.setData({
-          locationStatus: '定位启动失败'
-        });
+        this.clearSharedLocation('定位启动失败');
       }
     });
+  },
+
+  stopLocationUpdates(statusText) {
+    if (this.locationStarted) {
+      wx.offLocationChange();
+      wx.stopLocationUpdate({
+        complete: () => {}
+      });
+      this.locationStarted = false;
+    }
+
+    this.lastLocation = null;
+    this.lastSentAt = 0;
+    this.removeSelfLocation();
+
+    if (statusText) {
+      this.setData({
+        locationStatus: statusText
+      });
+    }
+  },
+
+  clearSharedLocation(statusText) {
+    this.stopLocationUpdates(statusText);
+    this.sendSocketMessage({
+      type: 'location:clear'
+    });
+  },
+
+  removeSelfLocation() {
+    if (!this.session) {
+      return;
+    }
+
+    const participants = this.data.participants.slice();
+    const targetIndex = participants.findIndex((item) => item.participantId === this.session.participantId);
+
+    if (targetIndex < 0) {
+      return;
+    }
+
+    participants.splice(targetIndex, 1, this.decorateParticipant({
+      ...participants[targetIndex],
+      location: null
+    }));
+
+    this.syncParticipants(participants);
   },
 
   handleLocationChange(location) {
@@ -219,11 +272,7 @@ Page({
       this.socketConnectInFlight = false;
 
       if (!this.isLeaving) {
-        this.setData({
-          connectionStatus: '连接失败，稍后重试'
-        });
-        this.showSocketConnectionHelp(baseUrls);
-        this.scheduleReconnect();
+        this.handleSocketConnectFailure(baseUrls);
       }
       return;
     }
@@ -320,10 +369,97 @@ Page({
         return;
       }
 
-      this.setData({
-        connectionStatus: '连接异常'
-      });
+      this.recoverFromSocketError(socketTask);
     });
+  },
+
+  async handleSocketConnectFailure(baseUrls) {
+    const sessionStillValid = await this.checkSessionStillValid();
+
+    if (!sessionStillValid || this.isLeaving) {
+      return;
+    }
+
+    this.setData({
+      connectionStatus: '连接失败，稍后重试'
+    });
+    this.showSocketConnectionHelp(baseUrls);
+    this.scheduleReconnect();
+  },
+
+  async checkSessionStillValid() {
+    if (!this.session || this.sessionStatusCheckInFlight || this.sessionExpiredRedirecting) {
+      return !this.sessionExpiredRedirecting;
+    }
+
+    this.sessionStatusCheckInFlight = true;
+
+    try {
+      const response = await request(
+        `/api/rooms/${encodeURIComponent(this.session.roomId)}?participantId=${encodeURIComponent(this.session.participantId)}&token=${encodeURIComponent(this.session.token)}`
+      );
+
+      if (response && response.room) {
+        this.room = response.room;
+      }
+
+      if (response && Array.isArray(response.participants)) {
+        this.syncParticipants(response.participants);
+      }
+
+      return true;
+    } catch (error) {
+      const message = String((error && error.message) || '');
+
+      if (message.includes('房间不存在') || message.includes('身份校验失败')) {
+        this.handleExpiredSession();
+        return false;
+      }
+
+      return true;
+    } finally {
+      this.sessionStatusCheckInFlight = false;
+    }
+  },
+
+  handleExpiredSession() {
+    if (this.sessionExpiredRedirecting) {
+      return;
+    }
+
+    this.sessionExpiredRedirecting = true;
+    this.isLeaving = true;
+    this.teardownRealtimeFeatures('session-expired');
+    wx.setStorageSync('leaveCleanupNotice', '当前房间会话已失效，请重新创建或加入');
+    wx.removeStorageSync('liveLocationSession');
+    wx.reLaunch({
+      url: '/pages/home/home'
+    });
+  },
+
+  recoverFromSocketError(socketTask) {
+    if (this.socketTask === socketTask) {
+      this.socketTask = null;
+    }
+
+    this.stopHeartbeat();
+    this.socketConnectInFlight = false;
+
+    try {
+      socketTask.close({
+        code: 1000,
+        reason: 'socket-error'
+      });
+    } catch (error) {
+      // Ignore close errors while forcing a reconnect.
+    }
+
+    if (!this.isLeaving) {
+      this.setData({
+        connectionStatus: '连接异常，正在重连'
+      });
+      this.scheduleReconnect();
+    }
   },
 
   showSocketConnectionHelp(baseUrls) {
@@ -581,7 +717,13 @@ Page({
     }
 
     this.isLeaving = true;
-    this.teardownRealtimeFeatures();
+    this.clearReconnectTimer();
+    this.stopHeartbeat();
+    this.sendSocketMessage({
+      type: 'leave'
+    });
+    await delay(SOCKET_CLOSE_GRACE_MS);
+    this.teardownRealtimeFeatures('leave-room');
 
     try {
       await request('/api/rooms/leave', 'POST', {
@@ -610,21 +752,11 @@ Page({
           return;
         }
 
-        if (this.locationStarted) {
-          wx.offLocationChange();
-          wx.stopLocationUpdate({
-            complete: () => {}
-          });
-          this.locationStarted = false;
-        }
-
-        this.setData({
-          locationStatus: '定位权限已关闭'
-        });
+        this.clearSharedLocation('定位权限已关闭');
 
         wx.showModal({
           title: '定位授权已关闭',
-          content: '如需立即从房间内移除当前位置，请继续点击“停止共享并删除”。',
+          content: '当前位置已停止继续上传；如果当前网络连接正常，房间内也会立刻同步移除你刚才的位置。',
           showCancel: false
         });
       }
@@ -637,24 +769,18 @@ Page({
     });
   },
 
-  teardownRealtimeFeatures() {
+  teardownRealtimeFeatures(closeReason = 'page-closed') {
     this.clearReconnectTimer();
     this.stopHeartbeat();
     this.socketConnectInFlight = false;
 
-    if (this.locationStarted) {
-      wx.offLocationChange();
-      wx.stopLocationUpdate({
-        complete: () => {}
-      });
-      this.locationStarted = false;
-    }
+    this.stopLocationUpdates();
 
     if (this.socketTask) {
       try {
         this.socketTask.close({
           code: 1000,
-          reason: 'page-closed'
+          reason: closeReason
         });
       } catch (error) {
         // ignore close errors
