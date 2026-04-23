@@ -1,0 +1,303 @@
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.hero {
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+}
+
+.hero-title {
+  display: block;
+  font-size: 42rpx;
+  font-weight: 700;
+  margin-bottom: 14rpx;
+}
+
+.hero-desc {
+  display: block;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.7;
+  font-size: 28rpx;
+}
+
+.compliance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.notice-intro {
+  color: #334155;
+  font-size: 27rpx;
+  line-height: 1.7;
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.notice-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 22rpx;
+  border-radius: 22rpx;
+  background: #f8fafc;
+}
+
+.notice-label {
+  color: #0f172a;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.notice-text {
+  color: #334155;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.notice-mini-button {
+  min-width: 180rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  margin: 4rpx 0 0;
+  align-self: flex-start;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  border: none;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 24rpx;
+}
+
+.notice-warning {
+  color: #b45309;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.consent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.consent-item {
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+  padding: 20rpx 22rpx;
+  border-radius: 22rpx;
+  border: 1rpx solid #cbd5e1;
+  background: #ffffff;
+}
+
+.consent-indicator {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+  border: 2rpx solid #94a3b8;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.checked {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.consent-checkmark {
+  color: #ffffff;
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.consent-text {
+  flex: 1;
+  color: #0f172a;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.consent-tip {
+  color: #b45309;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.consent-tip-ready {
+  color: #166534;
+}
+
+.notice-action-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.notice-action-half {
+  flex: 1;
+}
+
+.notice-confirmed-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 22rpx;
+  border-radius: 22rpx;
+  background: #eff6ff;
+}
+
+.notice-confirmed-text {
+  color: #1e3a8a;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.notice-review-button {
+  width: 100%;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.field-label {
+  font-size: 28rpx;
+  color: #334155;
+  font-weight: 600;
+}
+
+.field-input {
+  height: 90rpx;
+  border-radius: 22rpx;
+  padding: 0 24rpx;
+  background: #f1f5f9;
+  font-size: 30rpx;
+}
+
+.join-field {
+  margin-top: 8rpx;
+}
+
+.action-button {
+  width: 100%;
+  margin-top: 8rpx;
+}
+
+.entry-gate-tip {
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.backend-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.backend-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.backend-status {
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.backend-status-ok {
+  color: #166534;
+}
+
+.backend-status-error {
+  color: #b91c1c;
+}
+
+.backend-status-checking {
+  color: #1d4ed8;
+}
+
+.backend-desc {
+  color: #475569;
+  font-size: 25rpx;
+  line-height: 1.7;
+}
+
+.backend-action-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.backend-action-half {
+  flex: 1;
+}
+
+.backend-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 22rpx;
+  border-radius: 22rpx;
+  background: #f8fafc;
+}
+
+.backend-suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.backend-suggestion {
+  margin: 0;
+  padding: 0 22rpx;
+  min-height: 64rpx;
+  line-height: 64rpx;
+  border: none;
+  border-radius: 999rpx;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 24rpx;
+}
+
+.backend-tip {
+  color: #64748b;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.tips-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.tip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.tip-item {
+  color: #334155;
+  font-size: 28rpx;
+  line-height: 1.6;
+}

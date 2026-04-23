@@ -1,0 +1,55 @@
+page {
+  min-height: 100%;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.page-shell {
+  min-height: 100vh;
+  padding: 28rpx 24rpx 36rpx;
+  box-sizing: border-box;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  box-shadow: 0 16rpx 40rpx rgba(15, 23, 42, 0.08);
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.muted-text {
+  color: #64748b;
+}
+
+.primary-button {
+  border-radius: 999rpx;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: none;
+}
+
+.secondary-button {
+  border-radius: 999rpx;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: none;
+}
+
+.danger-button {
+  border-radius: 999rpx;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: none;
+}

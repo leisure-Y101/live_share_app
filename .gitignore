@@ -1,0 +1,5 @@
+project.private.config.json
+backend/logs/
+backend/node_modules/
+.DS_Store
+Thumbs.db

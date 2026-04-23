@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/room/room"
+  ],
+  "window": {
+    "navigationBarTitleText": "共享地图",
+    "navigationBarBackgroundColor": "#0f172a",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f8fafc",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在房间中实时共享地图位置"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "onLocationChange",
+    "startLocationUpdate"
+  ]
+}
