@@ -1,0 +1,13 @@
+.git
+.gitignore
+backend/node_modules
+backend/logs
+backend/.env
+devtools-download.html
+miniprogram
+deploy
+scripts
+*.md
+project.private.config.json
+npm-debug.log*
+yarn-error.log*

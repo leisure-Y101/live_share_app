@@ -11,7 +11,7 @@
                                                                     "servicePath":  "/",
                                                                     "containerPort":  8787,
                                                                     "uploadType":  "package",
-                                                                    "localPath":  "./backend",
+                                                                    "localPath":  "./",
                                                                     "dockerfilePath":  "./Dockerfile",
                                                                     "mode":  "low-cost",
                                                                     "cpu":  0.25,
