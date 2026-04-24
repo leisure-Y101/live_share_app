@@ -1,71 +1,76 @@
-<view class="page-shell home-page">
-  <view class="hero card">
-    <text class="hero-title">创建一个共享地图房间</text>
-    <text class="hero-desc muted-text">你可以自己创建房间，也可以输入邀请码加入。只有在你主动进入房间并完成隐私授权、定位授权后，房间内成员才会看到你的当前位置。</text>
+<view class="home-page">
+  <view class="hero-panel">
+    <view class="hero-badge">实时 · 私密 · 可撤回</view>
+    <text class="hero-title">和信任的人临时共享位置</text>
+    <text class="hero-desc">创建房间、发送邀请码，成员授权后即可在同一张地图上查看彼此当前位置。退出后会停止共享并删除房间内位置。</text>
+    <view class="hero-stats">
+      <view class="hero-stat">
+        <text class="stat-value">授权后</text>
+        <text class="stat-label">才开始定位</text>
+      </view>
+      <view class="hero-stat">
+        <text class="stat-value">房间内</text>
+        <text class="stat-label">成员可见</text>
+      </view>
+      <view class="hero-stat">
+        <text class="stat-value">不留轨迹</text>
+        <text class="stat-label">仅当前点位</text>
+      </view>
+    </view>
   </view>
 
-  <view class="card compliance-card">
-    <text class="section-title">进入房间前请确认</text>
-    <text class="notice-intro">下面这些内容会在进入房间前直接告知你，不只写在隐私政策里。请先确认，再创建或加入房间。</text>
-
-    <view class="notice-list">
-      <view class="notice-item">
-        <text class="notice-label">我们会收集什么</text>
-        <text class="notice-text">精确位置信息、昵称、邀请码/房间标识，以及必要的网络与安全日志。</text>
+  <view wx:if="{{!entryNoticeConfirmed}}" class="card notice-card">
+    <view class="section-head">
+      <view>
+        <text class="eyebrow">进入前告知</text>
+        <text class="section-title">请先确认共享规则</text>
       </view>
+      <text class="section-tag">必读</text>
+    </view>
 
-      <view class="notice-item">
-        <text class="notice-label">为什么收集</text>
-        <text class="notice-text">仅用于当前房间内的实时共享位置，不用于房间外展示、营销或历史轨迹分析。</text>
+    <view class="notice-summary">
+      <view class="summary-item">
+        <text class="summary-icon">📍</text>
+        <view class="summary-copy">
+          <text class="summary-title">收集内容</text>
+          <text class="summary-text">精确位置信息、昵称、邀请码/房间标识，以及必要网络与安全日志。</text>
+        </view>
       </view>
+      <view class="summary-item">
+        <text class="summary-icon">👥</text>
+        <view class="summary-copy">
+          <text class="summary-title">可见范围</text>
+          <text class="summary-text">仅当前房间成员可见，不对房间外公开，不用于营销或轨迹分析。</text>
+        </view>
+      </view>
+      <view class="summary-item">
+        <text class="summary-icon">⏱</text>
+        <view class="summary-copy">
+          <text class="summary-title">开始与结束</text>
+          <text class="summary-text">进入房间并完成微信隐私、定位授权后开始；退出、断连超时或停止共享后结束。</text>
+        </view>
+      </view>
+    </view>
 
-      <view class="notice-item">
-        <text class="notice-label">给谁看</text>
-        <text class="notice-text">仅当前房间内成员可见，不对房间外公开。</text>
+    <view class="notice-detail-panel">
+      <view class="detail-row">
+        <text class="detail-label">保存多久</text>
+        <text class="detail-text">{{locationRetentionText}} {{securityLogRetentionText}}</text>
       </view>
-
-      <view class="notice-item">
-        <text class="notice-label">什么时候开始</text>
-        <text class="notice-text">只有你主动创建或加入房间，并在进入房间后同意微信隐私保护指引、同意定位授权后，才开始共享当前位置。</text>
+      <view class="detail-row">
+        <text class="detail-label">如何撤回</text>
+        <text class="detail-text">{{withdrawLocationPathText}}</text>
       </view>
-
-      <view class="notice-item">
-        <text class="notice-label">什么时候结束</text>
-        <text class="notice-text">点击“停止共享并删除”、主动离开房间、或连接断开并超时后停止共享。</text>
+      <view class="detail-row">
+        <text class="detail-label">第三方服务</text>
+        <text class="detail-text">{{thirdPartyServiceText}}</text>
       </view>
-
-      <view class="notice-item">
-        <text class="notice-label">是否保存轨迹</text>
-        <text class="notice-text">不保存历史轨迹，只保留共享中的当前位置。</text>
+      <view class="detail-row">
+        <text class="detail-label">联系删除</text>
+        <text class="detail-text">房间内可点“停止共享并删除”；也可联系 {{privacyContactEmail}}</text>
       </view>
-
-      <view class="notice-item">
-        <text class="notice-label">存多久</text>
-        <text class="notice-text">{{locationRetentionText}}</text>
-        <text class="notice-text">{{securityLogRetentionText}}</text>
-      </view>
-
-      <view class="notice-item">
-        <text class="notice-label">如何撤回</text>
-        <text class="notice-text">{{withdrawLocationPathText}}</text>
-      </view>
-
-      <view class="notice-item">
-        <text class="notice-label">如何删除</text>
-        <text class="notice-text">房间内提供“停止共享并删除”入口；联系邮箱：{{privacyContactEmail}}</text>
-        <text wx:if="{{needsRealPrivacyEmail}}" class="notice-warning">发布前请把联系邮箱替换成你的真实邮箱。</text>
-        <button class="notice-mini-button" bindtap="copyPrivacyEmail">复制联系邮箱</button>
-      </view>
-
-      <view class="notice-item">
-        <text class="notice-label">第三方服务</text>
-        <text class="notice-text">{{thirdPartyServiceText}}</text>
-      </view>
-
-      <view class="notice-item">
-        <text class="notice-label">未成年人说明</text>
-        <text class="notice-text">如你未满 14 周岁，请先取得监护人同意后再使用位置共享功能。</text>
-      </view>
+      <text wx:if="{{needsRealPrivacyEmail}}" class="notice-warning">发布前请把联系邮箱替换成真实邮箱。</text>
+      <button class="text-button" bindtap="copyPrivacyEmail">复制联系邮箱</button>
     </view>
 
     <view class="consent-list">
@@ -75,7 +80,6 @@
         </view>
         <text class="consent-text">我已阅读并同意上述共享前告知及位置共享说明。</text>
       </view>
-
       <view class="consent-item" bindtap="toggleGuardianConfirmed">
         <view class="consent-indicator {{guardianConfirmed ? 'checked' : ''}}">
           <text wx:if="{{guardianConfirmed}}" class="consent-checkmark">✓</text>
@@ -84,100 +88,99 @@
       </view>
     </view>
 
-    <text class="consent-tip {{canEnterRoom ? 'consent-tip-ready' : ''}}">{{entryNoticeConfirmed ? '已确认告知内容。进入房间后，仍需通过微信隐私授权和定位授权才会开始共享。' : (canEnterRoom ? '你已经勾选完成，点击下方“我已知晓，继续”即可进入创建/加入页面。' : '请先完成以上确认，再点击“我已知晓，继续”。')}}</text>
-
-    <view wx:if="{{!entryNoticeConfirmed}}" class="notice-action-row">
-      <button class="secondary-button notice-action-half" bindtap="declineAndExit">不同意并退出</button>
-      <button class="primary-button notice-action-half" disabled="{{!canEnterRoom}}" bindtap="confirmEntryNotice">我已知晓，继续</button>
-    </view>
-
-    <view wx:else class="notice-confirmed-box">
-      <text class="notice-confirmed-text">已完成进入前确认，现在可以创建房间或输入邀请码加入房间。</text>
-      <button class="secondary-button notice-review-button" bindtap="resetEntryNotice">重新查看告知</button>
+    <text class="consent-tip {{canEnterRoom ? 'consent-tip-ready' : ''}}">{{canEnterRoom ? '确认后可以创建或加入房间。进入房间后仍需微信定位授权。' : '请先完成两项确认。'}}</text>
+    <view class="notice-actions">
+      <button class="secondary-button action-half" bindtap="declineAndExit">不同意并退出</button>
+      <button class="primary-button action-half" disabled="{{!canEnterRoom}}" bindtap="confirmEntryNotice">我已知晓，继续</button>
     </view>
   </view>
 
-  <view wx:if="{{entryNoticeConfirmed}}" class="card form-card">
-    <view class="field">
-      <text class="field-label">你的昵称</text>
-      <input
-        class="field-input"
-        placeholder="比如：小李"
-        maxlength="20"
-        value="{{displayName}}"
-        bindinput="handleDisplayNameInput"
-      />
-    </view>
-
-    <view class="field join-field">
-      <text class="field-label">邀请码</text>
-      <input
-        class="field-input"
-        placeholder="输入 6 位邀请码"
-        maxlength="6"
-        value="{{inviteCode}}"
-        bindinput="handleInviteCodeInput"
-      />
-    </view>
-
-    <button class="primary-button action-button" disabled="{{!canEnterRoom}}" loading="{{loadingAction === 'create'}}" bindtap="createRoom">创建房间</button>
-    <button class="secondary-button action-button" disabled="{{!canEnterRoom}}" loading="{{loadingAction === 'join'}}" bindtap="joinRoom">加入房间</button>
-    <text class="entry-gate-tip muted-text">进入房间不代表立刻开始共享；只有继续同意微信隐私保护指引并开启定位权限后，才会上传当前位置。</text>
-  </view>
-
-  <view wx:if="{{entryNoticeConfirmed}}" class="card backend-card">
-    <view class="backend-header">
-      <text class="section-title">本地后端连接</text>
-      <text class="backend-status backend-status-{{backendStatusKind}}">{{backendStatusText}}</text>
-    </view>
-
-    <text class="backend-desc">如果开发者工具访问 `127.0.0.1` 不稳定，可以切到当前电脑的局域网地址；创建和加入前也会自动先做一次连通性检查。</text>
-
-    <view class="backend-action-row">
-      <button class="secondary-button backend-action-half" bindtap="checkBackendStatus">检测连接</button>
-      <button class="secondary-button backend-action-half" bindtap="toggleBackendPanel">{{backendPanelOpen ? '收起设置' : '修改地址'}}</button>
-    </view>
-
-    <view wx:if="{{backendPanelOpen}}" class="backend-panel">
-      <view class="field">
-        <text class="field-label">后端地址</text>
-        <input
-          class="field-input"
-          placeholder="例如 http://192.168.31.210:8787"
-          value="{{backendBaseUrlInput}}"
-          bindinput="handleBackendBaseUrlInput"
-        />
+  <view wx:else class="entry-stack">
+    <view class="card entry-card">
+      <view class="section-head">
+        <view>
+          <text class="eyebrow">开始共享</text>
+          <text class="section-title">创建或加入房间</text>
+        </view>
+        <button class="ghost-button" bindtap="resetEntryNotice">查看告知</button>
       </view>
 
-      <view class="backend-suggestion-list">
-        <button
-          wx:for="{{backendSuggestions}}"
-          wx:key="*this"
-          class="backend-suggestion"
-          data-url="{{item}}"
-          bindtap="useSuggestedBackend"
-        >
-          {{item}}
-        </button>
+      <view class="form-grid">
+        <view class="field">
+          <text class="field-label">你的昵称</text>
+          <input class="field-input" placeholder="比如：小张" maxlength="20" value="{{displayName}}" bindinput="handleDisplayNameInput" />
+        </view>
+        <view class="field">
+          <text class="field-label">邀请码</text>
+          <input class="field-input code-input" placeholder="输入 6 位邀请码" maxlength="6" value="{{inviteCode}}" bindinput="handleInviteCodeInput" />
+        </view>
       </view>
 
+      <view class="primary-action-card">
+        <view>
+          <text class="action-title">我来开一个房间</text>
+          <text class="action-desc">适合你先邀请朋友加入。</text>
+        </view>
+        <button class="primary-button compact-button" loading="{{loadingAction === 'create'}}" bindtap="createRoom">创建</button>
+      </view>
+
+      <view class="secondary-action-card">
+        <view>
+          <text class="action-title">我有邀请码</text>
+          <text class="action-desc">输入上方 6 位码后加入。</text>
+        </view>
+        <button class="secondary-button compact-button" loading="{{loadingAction === 'join'}}" bindtap="joinRoom">加入</button>
+      </view>
+
+      <text class="entry-gate-tip">进入房间不代表立刻共享；只有继续同意微信隐私保护指引并开启定位权限后，才会上传当前位置。</text>
+    </view>
+
+    <view class="card backend-card">
+      <view class="backend-header" bindtap="toggleBackendPanel">
+        <view>
+          <text class="eyebrow">服务状态</text>
+          <text class="section-title">{{backendSectionTitle}}</text>
+        </view>
+        <text class="status-pill status-{{backendStatusKind}}">{{backendStatusText}}</text>
+      </view>
+      <text class="backend-desc">{{backendDesc}}</text>
       <view class="backend-action-row">
-        <button class="primary-button backend-action-half" bindtap="saveBackendBaseUrl">保存并检测</button>
-        <button class="secondary-button backend-action-half" bindtap="resetBackendBaseUrl">恢复默认</button>
+        <button class="secondary-button backend-action-half" bindtap="checkBackendStatus">检测连接</button>
+        <button class="secondary-button backend-action-half" bindtap="toggleBackendPanel">{{backendPanelOpen ? '收起配置' : '配置地址'}}</button>
       </view>
 
-      <text class="backend-tip">如果还没启动后端，请在项目根目录双击 `start-backend.cmd`，或在 `backend` 目录运行 `node server.js`。</text>
+      <view wx:if="{{backendPanelOpen}}" class="backend-panel">
+        <view wx:if="{{backendUsesCloudContainer}}" class="backend-cloud-summary">
+          <text class="backend-cloud-label">云托管目标</text>
+          <text class="backend-cloud-target">{{backendTargetLabel || '未填写'}}</text>
+          <text class="backend-tip">{{backendTip}}</text>
+        </view>
+        <block wx:else>
+          <view class="field">
+            <text class="field-label">后端地址</text>
+            <input class="field-input" placeholder="{{backendPlaceholder}}" value="{{backendBaseUrlInput}}" bindinput="handleBackendBaseUrlInput" />
+          </view>
+          <view class="backend-suggestion-list">
+            <button wx:for="{{backendSuggestions}}" wx:key="*this" class="backend-suggestion" data-url="{{item}}" bindtap="useSuggestedBackend">{{item}}</button>
+          </view>
+          <view class="backend-action-row">
+            <button class="primary-button backend-action-half" bindtap="saveBackendBaseUrl">保存并检测</button>
+            <button class="secondary-button backend-action-half" bindtap="resetBackendBaseUrl">恢复默认</button>
+          </view>
+          <text class="backend-tip">{{backendTip}}</text>
+        </block>
+      </view>
     </view>
-  </view>
 
-  <view wx:if="{{entryNoticeConfirmed}}" class="card tips-card">
-    <text class="section-title">最小可用流程</text>
-    <view class="tip-list">
-      <text class="tip-item">1. 一个人先创建房间。</text>
-      <text class="tip-item">2. 把邀请码或分享卡片发给别人。</text>
-      <text class="tip-item">3. 所有人进入房间后授权定位。</text>
-      <text class="tip-item">4. 地图里会实时显示在线成员的位置。</text>
-      <text class="tip-item">5. 点击停止共享并删除后，位置会从房间内移除。</text>
+    <view class="card flow-card">
+      <text class="section-title">最小可用流程</text>
+      <view class="flow-list">
+        <text class="flow-item">1. 一个人先创建房间。</text>
+        <text class="flow-item">2. 把邀请码或分享卡片发给别人。</text>
+        <text class="flow-item">3. 所有人进入房间后授权定位。</text>
+        <text class="flow-item">4. 地图实时显示在线成员的位置。</text>
+        <text class="flow-item">5. 停止共享后从房间内移除位置。</text>
+      </view>
     </view>
   </view>
 </view>

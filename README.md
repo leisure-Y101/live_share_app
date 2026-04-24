@@ -1,128 +1,239 @@
-# 微信小程序实时共享地图
+# 微信小程序实时位置共享
 
-这是一个从零搭好的最小可用版本，目标只有一个：创建房间、通过邀请码邀请别人、所有进入房间的人授权定位后实时共享位置、退出后位置自动消失。
+这是一个用于微信小程序的实时位置共享项目，包含：
 
-## 目录结构
+- `miniprogram/`：小程序前端
+- `backend/`：Node.js 后端服务
 
-```text
-live-location-share-app/
-├─ backend/                # Node 后端，提供房间接口和 WebSocket 实时同步
-├─ miniprogram/            # 微信小程序前端
-├─ project.config.json     # 微信开发者工具项目配置
-├─ start-backend.cmd       # 一键启动后端
-└─ README.md
-```
+后端现在支持两种运行模式：
 
-## 已经实现的能力
+- `memory`：仅内存，适合本地联调
+- `mysql`：MySQL 持久化，适合更接近实际可用的部署
 
-- 创建房间
-- 通过邀请码加入房间
-- 微信小程序内置地图展示多人位置
-- WebSocket 实时同步位置
-- 主动退出时立即从房间中移除
-- 异常断开时由服务端超时清理
-- 房间分享卡片自动带上邀请码
+## 先说清楚一件事
 
-## 本地运行
+`Navicat Premium 16` 只是数据库管理工具，不是后端服务。
 
-### 1. 启动后端
+它能帮你：
 
-在项目根目录双击 `start-backend.cmd`，或者在终端里运行：
+- 连接 MySQL
+- 查看和编辑表数据
+- 导入 SQL
+
+它不能替代：
+
+- 小程序的 HTTP 接口服务
+- WebSocket 实时通道
+- 房间和成员状态同步逻辑
+
+真正可用的链路必须是：
+
+1. 小程序连接 Node.js 后端
+2. Node.js 后端读写 MySQL
+3. 你用 Navicat 管理 MySQL 数据
+
+## 当前后端能力
+
+- 房间创建 / 加入 / 离开
+- WebSocket 实时位置同步
+- 成员超时清理
+- 安全审计日志
+- MySQL 持久化当前房间和成员状态
+- Windows 登录后自动启动后端
+
+## 一、本地改成可持久化
+
+### 1. 安装后端依赖
 
 ```powershell
-cd D:\live-location-share-app\backend
+cd D:\codexproject\live-location-share-app\backend
+npm.cmd install
+```
+
+### 2. 配置 `.env`
+
+将 `backend/.env.example` 复制为 `backend/.env`，推荐最少配置如下：
+
+```env
+STORAGE_DRIVER=mysql
+HOST=0.0.0.0
+PORT=8787
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=你的MySQL密码
+DB_NAME=live_location_share
+DB_AUTO_MIGRATE=true
+```
+
+说明：
+
+- 只做联调时，可改成 `STORAGE_DRIVER=memory`
+- 想在 Navicat 里看到持久化数据，就用 `mysql`
+
+### 3. 建库
+
+先在 MySQL 中创建数据库：
+
+```sql
+CREATE DATABASE live_location_share
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+```
+
+然后二选一：
+
+- 直接启动后端，让它自动建表（`DB_AUTO_MIGRATE=true`）
+- 或者用 Navicat 导入 [schema.sql](/D:/codexproject/live-location-share-app/backend/sql/schema.sql)
+
+## 二、后端不再每次手动点启动
+
+### 方案 A：自动登录自启动
+
+在 `backend` 目录执行：
+
+```powershell
+cd D:\codexproject\live-location-share-app\backend
+npm.cmd run install:startup
+```
+
+这个脚本会按顺序尝试 3 种方式：
+
+1. Windows 计划任务
+2. 当前用户注册表自启动：`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+3. 当前用户启动文件夹脚本
+
+所以即使你的账号没有管理员权限，通常也能成功配置。
+
+日志位置：
+
+- `backend/logs/service.out.log`
+- `backend/logs/service.err.log`
+
+如果端口已经被已有后端占用，自启动脚本会自动跳过，避免重复拉起多个 Node 进程。
+
+如果以后你想移除自启动：
+
+```powershell
+npm.cmd run uninstall:startup
+```
+
+### 方案 B：手动调试启动
+
+```powershell
+cd D:\codexproject\live-location-share-app\backend
 node server.js
 ```
 
-默认服务地址：
+或者双击：
 
-- HTTP: `http://127.0.0.1:8787`
-- WebSocket: `ws://127.0.0.1:8787`
-
-### 2. 打开微信开发者工具
-
-如果电脑里还没有微信开发者工具，去官方下载安装：
-
-- [微信开发者工具下载](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
-
-然后：
-
-1. 打开微信开发者工具
-2. 选择“导入项目”
-3. 项目目录选择整个 `D:\live-location-share-app`
-4. AppID 临时调试可以先用测试号，或者保留 `touristappid`
-5. 勾选“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”
-
-## 真机联调和上线前要改的地方
-
-现在前端默认连的是本机地址：
-
-- `miniprogram/utils/config.js`
-
-```js
-const BASE_URL = 'http://127.0.0.1:8787';
-const WS_BASE_URL = 'ws://127.0.0.1:8787';
+```text
+start-backend.cmd
 ```
 
-这只适合开发者工具调试。
+但这只是调试方式，不是长期可用方式。
 
-如果你要真机使用或者准备上线，需要把后端部署到公网 HTTPS/WSS 域名上，然后把这两个地址改成正式域名，例如：
+## 三、小程序连接地址怎么配
+
+### 开发版
+
+开发者工具里默认会优先尝试：
+
+- `http://127.0.0.1:8787`
+- `http://localhost:8787`
+
+这只适合同一台电脑上的开发者工具调试。
+
+### 体验版 / 正式版
+
+体验版和正式版必须使用公网 `HTTPS` / `WSS`。
+
+请修改 [config.js](/D:/codexproject/live-location-share-app/miniprogram/utils/config.js)：
 
 ```js
-const BASE_URL = 'https://your-domain.com';
-const WS_BASE_URL = 'wss://your-domain.com';
+const PRODUCTION_HTTP_BASE_URL = 'https://your-domain.com';
+const PRODUCTION_WS_BASE_URL = 'wss://your-domain.com';
 ```
 
-同时你还需要在微信小程序后台配置：
+并在微信小程序后台配置：
 
 - `request` 合法域名
 - `socket` 合法域名
-- 隐私声明和定位权限用途说明
 
-## 共享前告知与删除说明
+下面这些地址都不能作为真正可上线的小程序后端地址：
 
-当前代码已经把进入房间前的关键说明直接放在首页，用户必须先确认，才能创建或加入房间。现在的行为是：
+- `127.0.0.1`
+- `localhost`
+- `192.168.x.x`
+- `10.x.x.x`
 
-- 收集内容：精确位置信息、昵称、邀请码/房间标识，以及必要的网络与安全日志
-- 使用目的：仅用于当前房间内实时共享位置
-- 可见范围：仅当前房间内成员可见，不对房间外公开
-- 开始条件：用户主动创建或加入房间后，还要继续通过微信隐私授权和定位授权，才会开始共享
-- 结束条件：点击“停止共享并删除”、离开房间、或连接断开超时后停止
-- 历史轨迹：不保存历史轨迹，只保留共享中的当前位置
-- 保留期限：当前位置仅在共享期间保存；退出或超时后立即删除，最迟不超过 60 秒完成清理
-- 安全日志：保留 30 天，仅用于安全审计
-- 删除入口：房间页提供“停止共享并删除”入口
-- 撤回路径：微信内可通过本小程序右上角“...” > 设置 > 位置信息关闭授权
-- 未成年人：未满 14 周岁需先取得监护人同意
+## 四、为什么你点击连接还是会失败
 
-联系邮箱、第三方说明等文案集中在：
+最常见原因不是 Navicat，而是下面这些：
 
-- `miniprogram/utils/privacy.js`
+1. 后端根本没在运行
+2. 小程序连的是本机或局域网地址
+3. 体验版 / 真机访问不到你电脑上的本地服务
+4. 正式域名没有 HTTPS / WSS
+5. 微信后台没有配置合法域名
 
-请在发布前把里面的 `PRIVACY_CONTACT_EMAIL` 改成你的真实联系邮箱。
+所以你要区分两类目标：
 
-## 安全日志
+- 想在本机开发：本地后端 + 本地 MySQL 就够
+- 想让小程序真正可用：必须部署公网后端
 
-后端现在会把最小必要的安全审计事件写到：
+## 五、后端健康检查
 
-- `backend/logs/security-audit-YYYY-MM-DD.jsonl`
+启动后访问：
 
-这些日志只记录房间创建、加入、退出、连接、鉴权失败等安全相关事件，不记录任何历史位置轨迹；超过 30 天的日志会自动清理。
+```text
+http://127.0.0.1:8787/health
+```
 
-## 适合你下一步继续补的功能
+你会看到类似结果：
 
-- 房主踢人
-- 房间密码
-- 头像昵称体系
-- 后台运行共享位置
-- 成员轨迹回放
-- 云服务器部署脚本
-- 房间有效期和自动销毁
+```json
+{
+  "ok": true,
+  "rooms": 0,
+  "participants": 0,
+  "storageDriver": "mysql"
+}
+```
 
-## 当前实现说明
+如果这里不是 `ok: true`，小程序一定连不上。
 
-- 后端没有依赖第三方 npm 包，直接用 Node 运行即可。
-- 数据目前保存在内存中，适合 MVP 和联调。
-- 地图使用的是小程序内置 `map` 组件。
-- 当前示例的房间与实时同步服务由开发者自建 Node 服务提供，未额外接入第三方云服务商。
-- 如果后端重启，房间数据会清空。
+## 六、数据库里会看到什么
+
+主要表：
+
+- `rooms`
+- `participants`
+
+你可以在 Navicat 里直接查看：
+
+- 当前有哪些房间
+- 哪些成员还在房间里
+- 最后心跳时间
+- 当前最新位置
+
+这个项目仍然不会保存历史轨迹回放，只保存当前有效状态。
+
+## 七、如果你要真正上线可用
+
+本地电脑自动启动只能解决“我不想手点脚本”。
+
+它解决不了：
+
+- 电脑关机后服务不可用
+- 外网访问不到你本地机器
+- 微信体验版 / 正式版不能走本地地址
+
+真正上线至少还需要：
+
+1. 一台公网服务器或云主机
+2. 一个备案可用域名
+3. HTTPS 证书
+4. 将 Node 后端部署到公网
+5. 将 MySQL 放在服务器或云数据库

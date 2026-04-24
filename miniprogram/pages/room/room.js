@@ -1,5 +1,9 @@
+'use strict';
+
 const { request } = require('../../utils/request');
-const { getWsBaseUrls, rememberWorkingWsBaseUrl } = require('../../utils/server');
+const feedback = require('../../utils/feedback');
+const { connectContainerSocket, getCloudContainerTarget } = require('../../utils/cloud');
+const { getWsBaseUrls, rememberWorkingWsBaseUrl, shouldUseCloudContainer } = require('../../utils/server');
 const {
   LOCATION_RETENTION_TEXT,
   PRIVACY_CONTACT_EMAIL,
@@ -50,7 +54,8 @@ Page({
       longitude: 116.4074
     },
     mapScale: 14,
-    lastSyncText: '等待同步'
+    lastSyncText: '等待同步',
+    onlineCount: 0
   },
 
   onLoad() {
@@ -131,24 +136,25 @@ Page({
           fail: () => {
             this.clearSharedLocation('定位权限未开启');
 
-            wx.showModal({
+            feedback.confirm({
               title: '需要定位权限',
               content: '请先打开定位权限，房间内才能实时共享位置。',
-              confirmText: '去设置',
-              success: (result) => {
-                if (result.confirm) {
-                  wx.openSetting({
-                    success: (openResult) => {
-                      if (openResult.authSetting['scope.userLocation']) {
-                        this.startLocationUpdates();
-                        return;
-                      }
-
-                      this.clearSharedLocation('定位权限未开启');
-                    }
-                  });
+              confirmText: '去设置'
+            }).then((confirmed) => {
+                if (!confirmed) {
+                  return;
                 }
-              }
+
+                wx.openSetting({
+                  success: (openResult) => {
+                    if (openResult.authSetting['scope.userLocation']) {
+                      this.startLocationUpdates();
+                      return;
+                    }
+
+                    this.clearSharedLocation('定位权限未开启');
+                  }
+                });
             });
           }
         });
@@ -261,7 +267,44 @@ Page({
       return;
     }
 
+    if (shouldUseCloudContainer()) {
+      void this.connectCloudSocket();
+      return;
+    }
+
     this.tryConnectSocket(getWsBaseUrls(), 0);
+  },
+
+  async connectCloudSocket() {
+    this.socketConnectInFlight = true;
+    this.setData({
+      connectionStatus: '连接云托管中'
+    });
+
+    try {
+      const socketPath =
+        `/ws?roomId=${encodeURIComponent(this.session.roomId)}` +
+        `&participantId=${encodeURIComponent(this.session.participantId)}` +
+        `&token=${encodeURIComponent(this.session.token)}`;
+      const socketTask = await connectContainerSocket(socketPath);
+
+      this.attachSocketListeners(socketTask, {
+        candidateLabel: getCloudContainerTarget() || '云托管',
+        onConnectFailure: () => {
+          this.handleSocketConnectFailure(['云托管']);
+        }
+      });
+    } catch (error) {
+      this.socketTask = null;
+      this.socketConnectInFlight = false;
+
+      if (!this.isLeaving) {
+        this.setData({
+          connectionStatus: '云托管连接失败，稍后重试'
+        });
+        this.handleSocketConnectFailure(['云托管']);
+      }
+    }
   },
 
   tryConnectSocket(baseUrls, index) {
@@ -277,11 +320,30 @@ Page({
       return;
     }
 
-    const socketUrl = `${baseUrl}/ws?roomId=${encodeURIComponent(this.session.roomId)}&participantId=${encodeURIComponent(this.session.participantId)}&token=${encodeURIComponent(this.session.token)}`;
+    const socketUrl =
+      `${baseUrl}/ws?roomId=${encodeURIComponent(this.session.roomId)}` +
+      `&participantId=${encodeURIComponent(this.session.participantId)}` +
+      `&token=${encodeURIComponent(this.session.token)}`;
     const socketTask = wx.connectSocket({
       url: socketUrl,
       timeout: SOCKET_TIMEOUT_MS
     });
+
+    this.attachSocketListeners(socketTask, {
+      candidateLabel: baseUrl,
+      beforeOpenStatusText: baseUrls.length > 1 ? `连接中（${index + 1}/${baseUrls.length}）` : '连接中',
+      rememberBaseUrl: true,
+      onConnectFailure: () => {
+        this.tryConnectSocket(baseUrls, index + 1);
+      }
+    });
+  },
+
+  attachSocketListeners(socketTask, options) {
+    const candidateLabel = options && options.candidateLabel ? options.candidateLabel : 'socket';
+    const beforeOpenStatusText = options && options.beforeOpenStatusText ? options.beforeOpenStatusText : '连接中';
+    const rememberBaseUrl = Boolean(options && options.rememberBaseUrl);
+    const onConnectFailure = options && options.onConnectFailure ? options.onConnectFailure : null;
 
     let opened = false;
     let switched = false;
@@ -289,7 +351,7 @@ Page({
     this.socketTask = socketTask;
     this.socketConnectInFlight = true;
     this.setData({
-      connectionStatus: baseUrls.length > 1 ? `连接中（${index + 1}/${baseUrls.length}）` : '连接中'
+      connectionStatus: beforeOpenStatusText
     });
 
     const switchToNextCandidate = () => {
@@ -309,10 +371,12 @@ Page({
           reason: 'switch-endpoint'
         });
       } catch (error) {
-        // Ignore close errors while cycling local endpoints.
+        // Ignore close errors while cycling candidates.
       }
 
-      this.tryConnectSocket(baseUrls, index + 1);
+      if (typeof onConnectFailure === 'function') {
+        onConnectFailure();
+      }
     };
 
     socketTask.onOpen(() => {
@@ -323,11 +387,15 @@ Page({
       opened = true;
       this.socketConnectInFlight = false;
       this.socketErrorPrompted = false;
-      rememberWorkingWsBaseUrl(baseUrl);
+
+      if (rememberBaseUrl) {
+        rememberWorkingWsBaseUrl(candidateLabel);
+      }
+
       this.clearReconnectTimer();
       this.startHeartbeat();
       this.setData({
-        connectionStatus: '已连接'
+        connectionStatus: `已连接：${candidateLabel}`
       });
 
       if (this.lastLocation) {
@@ -357,7 +425,7 @@ Page({
 
       if (!this.isLeaving) {
         this.setData({
-          connectionStatus: '连接断开，正在重连'
+          connectionStatus: '连接断开，正在重试'
         });
         this.scheduleReconnect();
       }
@@ -456,7 +524,7 @@ Page({
 
     if (!this.isLeaving) {
       this.setData({
-        connectionStatus: '连接异常，正在重连'
+        connectionStatus: '连接异常，正在重试'
       });
       this.scheduleReconnect();
     }
@@ -469,14 +537,15 @@ Page({
 
     this.socketErrorPrompted = true;
 
-    wx.showModal({
-      title: '连接本地后端失败',
-      content: [
-        `已尝试：${baseUrls.join('、')}`,
-        '请确认本地后端正在运行，并在微信开发者工具里勾选“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”后重新编译。'
-      ].join('\n'),
-      showCancel: false
-    });
+    const isCloudMode = shouldUseCloudContainer();
+    const content = isCloudMode
+      ? '请确认微信云开发云托管服务已经部署、服务名配置正确，并且容器实例已成功启动。'
+      : [
+          `已尝试：${baseUrls.join('、')}`,
+          '请确认当前 WebSocket 后端可从公网访问，并且已在微信小程序后台配置 socket 合法域名。'
+        ].join('\n');
+
+    feedback.alert({ title: '连接实时通道失败', content });
   },
 
   handleSocketMessage(rawMessage) {
@@ -496,7 +565,6 @@ Page({
 
     if (message.type === 'location:update') {
       this.mergeLocationUpdate(message.payload);
-      return;
     }
   },
 
@@ -535,12 +603,15 @@ Page({
         }
       }));
 
-    const centerParticipant = decorated.find((item) => item.isSelf && item.location) || decorated.find((item) => item.location);
+    const centerParticipant =
+      decorated.find((item) => item.isSelf && item.location) ||
+      decorated.find((item) => item.location);
 
     this.setData({
       participants: decorated,
       markers,
       lastSyncText: formatTime(Date.now()),
+      onlineCount: decorated.filter((item) => item.online).length,
       mapCenter: centerParticipant
         ? {
             latitude: centerParticipant.location.latitude,
@@ -560,7 +631,8 @@ Page({
       locationText: hasLocation
         ? `经度 ${formatNumber(participant.location.longitude)} / 纬度 ${formatNumber(participant.location.latitude)}`
         : '暂未上传位置',
-      stateText: participant.online ? `在线 · ${formatTime(participant.location && participant.location.updatedAt)}` : '暂时离线'
+      stateText: participant.online ? `在线 · ${formatTime(participant.location && participant.location.updatedAt)}` : '暂时离线',
+      avatarText: String(participant.displayName || '我').trim().slice(0, 1).toUpperCase() || '我'
     };
   },
 
@@ -652,7 +724,8 @@ Page({
 
   copyInviteCode() {
     wx.setClipboardData({
-      data: this.session.inviteCode
+      data: this.session.inviteCode,
+      success: () => feedback.success('邀请码已复制')
     });
   },
 
@@ -678,10 +751,7 @@ Page({
     const selfParticipant = this.data.participants.find((item) => item.isSelf && item.location);
 
     if (!selfParticipant) {
-      wx.showToast({
-        title: '还没有拿到你的定位',
-        icon: 'none'
-      });
+      feedback.toast('还没有拿到你的定位');
       return;
     }
 
@@ -697,17 +767,17 @@ Page({
   confirmLeave() {
     this.closePanel();
 
-    wx.showModal({
+    feedback.confirm({
       title: '停止共享并删除',
       content: '继续后会退出当前房间、停止位置共享，并删除你在本房间中的当前位置。必要的网络与安全日志仍会按 30 天保留，仅用于安全审计。',
       confirmText: '停止共享',
-      success: async (result) => {
-        if (!result.confirm) {
+      danger: true
+    }).then(async (confirmed) => {
+        if (!confirmed) {
           return;
         }
 
         await this.leaveRoom();
-      }
     });
   },
 
@@ -732,7 +802,7 @@ Page({
         token: this.session.token
       });
     } catch (error) {
-      // 后端已经有超时清理逻辑，这里不阻断退出。
+      // Backend already has timeout cleanup logic; leaving should still complete locally.
     }
 
     wx.setStorageSync('leaveCleanupNotice', '已停止共享并删除当前位置');
@@ -754,10 +824,9 @@ Page({
 
         this.clearSharedLocation('定位权限已关闭');
 
-        wx.showModal({
+        feedback.alert({
           title: '定位授权已关闭',
-          content: '当前位置已停止继续上传；如果当前网络连接正常，房间内也会立刻同步移除你刚才的位置。',
-          showCancel: false
+          content: '当前位置已停止继续上传；如果当前网络连接正常，房间内也会立刻同步移除你刚才的位置。'
         });
       }
     });
@@ -765,7 +834,8 @@ Page({
 
   copyPrivacyEmail() {
     wx.setClipboardData({
-      data: this.data.privacyContactEmail
+      data: this.data.privacyContactEmail,
+      success: () => feedback.success('联系邮箱已复制')
     });
   },
 
@@ -783,7 +853,7 @@ Page({
           reason: closeReason
         });
       } catch (error) {
-        // ignore close errors
+        // Ignore close errors.
       }
 
       this.socketTask = null;

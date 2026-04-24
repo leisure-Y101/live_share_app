@@ -12,7 +12,6 @@
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json",
   "permission": {
     "scope.userLocation": {
       "desc": "用于在房间中实时共享地图位置"

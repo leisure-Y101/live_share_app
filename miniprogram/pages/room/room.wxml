@@ -1,112 +1,94 @@
 <view class="room-screen">
-  <map
-    id="liveMap"
-    class="room-map"
-    latitude="{{mapCenter.latitude}}"
-    longitude="{{mapCenter.longitude}}"
-    scale="{{mapScale}}"
-    markers="{{markers}}"
-    show-location
-  />
+  <map id="liveMap" class="room-map" latitude="{{mapCenter.latitude}}" longitude="{{mapCenter.longitude}}" scale="{{mapScale}}" markers="{{markers}}" show-location />
 
-  <view class="menu-anchor">
-    <view class="menu-toggle {{panelOpen ? 'menu-toggle-active' : ''}}" bindtap="togglePanel">
-      <view class="menu-line"></view>
-      <view class="menu-line"></view>
-      <view class="menu-line"></view>
+  <view class="map-gradient top-gradient"></view>
+  <view class="map-gradient bottom-gradient"></view>
+
+  <view class="top-bar">
+    <view class="room-chip">
+      <text class="chip-label">邀请码</text>
+      <text class="chip-value">{{inviteCode}}</text>
+    </view>
+    <view class="top-actions">
+      <button class="icon-button" bindtap="copyInviteCode">复制</button>
+      <button class="icon-button primary" open-type="share">分享</button>
     </view>
   </view>
 
-  <view class="top-summary">
-    <view class="summary-chip">
-      <text class="summary-label">在线</text>
-      <text class="summary-value">{{participants.length}} 人</text>
+  <view class="status-strip">
+    <view class="status-card">
+      <text class="status-label">在线</text>
+      <text class="status-value">{{participants.length}} 人</text>
     </view>
-    <view class="summary-chip">
-      <text class="summary-label">同步</text>
-      <text class="summary-value">{{lastSyncText}}</text>
+    <view class="status-card">
+      <text class="status-label">连接</text>
+      <text class="status-value">{{connectionStatus}}</text>
+    </view>
+    <view class="status-card">
+      <text class="status-label">定位</text>
+      <text class="status-value">{{locationStatus}}</text>
     </view>
   </view>
 
-  <view class="floating-actions">
-    <button class="floating-button" bindtap="centerOnSelf">定位到我</button>
+  <view class="map-tools">
+    <button class="tool-button" bindtap="centerOnSelf">定位到我</button>
+    <button class="tool-button" bindtap="togglePanel">{{panelOpen ? '收起' : '成员'}}</button>
   </view>
 
-  <view wx:if="{{panelOpen}}" class="drawer-mask" bindtap="closePanel"></view>
+  <view wx:if="{{panelOpen}}" class="panel-mask" bindtap="closePanel"></view>
 
-  <view class="drawer {{panelOpen ? 'drawer-open' : ''}}" catchtap="noop">
-    <view class="drawer-header">
+  <view class="bottom-sheet {{panelOpen ? 'bottom-sheet-open' : ''}}" catchtap="noop">
+    <view class="sheet-handle" bindtap="togglePanel"></view>
+    <view class="sheet-header">
       <view>
-        <text class="drawer-title">房间控制台</text>
-        <text class="drawer-subtitle">信息都收在这里，地图界面保持清爽。</text>
+        <text class="sheet-kicker">共享地图</text>
+        <text class="sheet-title">房间控制台</text>
       </view>
-      <view class="drawer-close" bindtap="closePanel">
-        <text class="drawer-close-text">收起</text>
-      </view>
+      <text class="sheet-sync">同步 {{lastSyncText}}</text>
     </view>
 
-    <scroll-view class="drawer-scroll" scroll-y>
-      <view class="drawer-card invite-card">
-        <text class="drawer-card-label">邀请码</text>
-        <view class="invite-row">
+    <scroll-view class="sheet-scroll" scroll-y>
+      <view class="invite-panel">
+        <view>
+          <text class="panel-label">邀请码</text>
           <text class="invite-code">{{inviteCode}}</text>
-          <button class="drawer-mini-button" bindtap="copyInviteCode">复制</button>
         </view>
-        <text class="drawer-card-tip">把邀请码发给朋友，他们加入后授权定位就能共享位置。</text>
-        <view class="drawer-action-row">
-          <button class="secondary-button drawer-action-half" open-type="share">分享房间</button>
-        </view>
-      </view>
-
-      <view class="drawer-card">
-        <text class="drawer-card-label">房间状态</text>
-        <view class="status-stack">
-          <view class="status-pill">
-            <text class="status-pill-label">连接状态</text>
-            <text class="status-pill-value">{{connectionStatus}}</text>
-          </view>
-          <view class="status-pill">
-            <text class="status-pill-label">定位状态</text>
-            <text class="status-pill-value">{{locationStatus}}</text>
-          </view>
-          <view class="status-pill">
-            <text class="status-pill-label">最后更新</text>
-            <text class="status-pill-value">{{lastSyncText}}</text>
-          </view>
+        <view class="invite-actions">
+          <button class="mini-button" bindtap="copyInviteCode">复制</button>
+          <button class="mini-button primary" open-type="share">分享</button>
         </view>
       </view>
 
-      <view class="drawer-card member-card">
-        <view class="drawer-card-head">
-          <text class="drawer-card-label">成员列表</text>
-          <text class="drawer-card-meta">当前 {{participants.length}} 人</text>
+      <view class="member-section">
+        <view class="section-title-row">
+          <text class="panel-label">成员位置</text>
+          <text class="panel-meta">{{participants.length}} 人</text>
         </view>
-
-        <view class="member-list">
-          <view class="member-item" wx:for="{{participants}}" wx:key="participantId">
-            <view class="member-main">
-              <text class="member-name">{{item.displayName}}{{item.isSelf ? "（我）" : ""}}</text>
-              <text class="member-meta">{{item.locationText}}</text>
-            </view>
-            <text class="member-state {{item.online ? 'online' : 'offline'}}">{{item.stateText}}</text>
+        <view class="empty-members" wx:if="{{participants.length === 0}}">等待成员加入</view>
+        <view class="member-item" wx:for="{{participants}}" wx:key="participantId">
+          <view class="member-avatar {{item.online ? 'avatar-online' : 'avatar-offline'}}">{{item.avatarText}}</view>
+          <view class="member-main">
+            <text class="member-name">{{item.displayName}}{{item.isSelf ? '（我）' : ''}}</text>
+            <text class="member-meta">{{item.locationText}}</text>
           </view>
+          <text class="member-state {{item.online ? 'online' : 'offline'}}">{{item.stateText}}</text>
         </view>
       </view>
 
-      <view class="drawer-card note-card">
-        <text class="drawer-card-label">共享说明</text>
-        <text class="note-text">仅当前房间成员可见，只共享当前位置，不保存历史轨迹。</text>
-        <text class="note-text">{{locationRetentionText}}</text>
-        <text class="note-text">{{withdrawLocationPathText}}</text>
-        <text class="note-text">{{thirdPartyServiceText}}</text>
-        <text class="note-text">联系邮箱：{{privacyContactEmail}}</text>
-        <text wx:if="{{needsRealPrivacyEmail}}" class="note-warning">发布前请把联系邮箱替换成你的真实邮箱。</text>
+      <view class="privacy-panel">
+        <text class="panel-label">共享说明</text>
+        <text class="privacy-text">仅当前房间成员可见，只共享当前位置，不保存历史轨迹。</text>
+        <text class="privacy-text">{{locationRetentionText}}</text>
+        <text class="privacy-text">{{withdrawLocationPathText}}</text>
+        <text class="privacy-text">{{thirdPartyServiceText}}</text>
+        <text class="privacy-text">联系邮箱：{{privacyContactEmail}}</text>
+        <text wx:if="{{needsRealPrivacyEmail}}" class="privacy-warning">发布前请把联系邮箱替换成真实邮箱。</text>
       </view>
 
-      <view class="drawer-footer">
-        <button class="secondary-button footer-button" bindtap="openLocationSettings">去授权设置</button>
-        <button class="secondary-button footer-button" bindtap="copyPrivacyEmail">复制联系邮箱</button>
-        <button class="danger-button footer-button" bindtap="confirmLeave">停止共享并删除</button>
+      <view class="sheet-actions">
+        <button class="secondary-button sheet-button" bindtap="openLocationSettings">定位权限设置</button>
+        <button class="secondary-button sheet-button" bindtap="copyPrivacyEmail">复制联系邮箱</button>
+        <button class="danger-button sheet-button" bindtap="confirmLeave">停止共享并删除</button>
       </view>
     </scroll-view>
   </view>

@@ -1,5 +1,6 @@
 project.private.config.json
 backend/logs/
 backend/node_modules/
+backend/.env
 .DS_Store
 Thumbs.db
