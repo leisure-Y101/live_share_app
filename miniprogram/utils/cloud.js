@@ -141,6 +141,12 @@ async function connectContainerSocket(path) {
     path
   };
 
+  if (String(CLOUDBASE_ENV_ID || '').trim()) {
+    options.config = {
+      env: String(CLOUDBASE_ENV_ID || '').trim()
+    };
+  }
+
   const result = await wx.cloud.connectContainer(options);
   return result && result.socketTask ? result.socketTask : result;
 }

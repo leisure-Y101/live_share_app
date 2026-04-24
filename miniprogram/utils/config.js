@@ -2,7 +2,7 @@
 const PRODUCTION_HTTP_BASE_URL = '';
 const PRODUCTION_WS_BASE_URL = '';
 const CLOUDBASE_ENV_ID = 'cloudbase-d3gtnhob5d143914c';
-const CLOUDBASE_SERVICE_NAME = 'live-location-backend';
+const CLOUDBASE_SERVICE_NAME = 'leisure-python';
 
 const DEVELOPMENT_HTTP_BASE_URL = 'http://192.168.31.210:8787';
 const DEVELOPMENT_WS_BASE_URL = 'ws://192.168.31.210:8787';
