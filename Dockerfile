@@ -1,4 +1,4 @@
-FROM node:18-alpine
+﻿FROM node:18-alpine
 
 WORKDIR /app
 
@@ -9,9 +9,10 @@ COPY backend/server.js ./
 COPY backend/src ./src
 
 ENV HOST=0.0.0.0
-ENV PORT=8787
+ENV PORT=80
 ENV STORAGE_DRIVER=memory
 
-EXPOSE 8787
+EXPOSE 80
 
 CMD ["npm", "start"]
+

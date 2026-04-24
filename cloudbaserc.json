@@ -1,33 +1,33 @@
 {
-  "version": "2.0",
-  "envId": "cloudbase-d3gtnhob5d143914c",
-  "framework": {
-    "name": "live-location-share-app",
-    "plugins": {
-      "client": {
-        "use": "@cloudbase/framework-plugin-container",
-        "inputs": {
-          "serviceName": "leisure-python",
-          "servicePath": "/",
-          "containerPort": 8787,
-          "uploadType": "package",
-          "localPath": "./",
-          "dockerfilePath": "./Dockerfile",
-          "mode": "low-cost",
-          "cpu": 0.25,
-          "mem": 0.5,
-          "minNum": 0,
-          "maxNum": 2,
-          "envVariables": {
-            "HOST": "0.0.0.0",
-            "PORT": "8787",
-            "STORAGE_DRIVER": "memory"
-          }
-        }
-      }
-    }
-  },
-  "cloudrun": {
-    "name": "leisure-python"
-  }
+    "version":  "2.0",
+    "envId":  "cloudbase-d3gtnhob5d143914c",
+    "framework":  {
+                      "name":  "live-location-share-app",
+                      "plugins":  {
+                                      "client":  {
+                                                     "use":  "@cloudbase/framework-plugin-container",
+                                                     "inputs":  {
+                                                                    "serviceName":  "leisure-python",
+                                                                    "servicePath":  "/",
+                                                                    "containerPort":  80,
+                                                                    "uploadType":  "package",
+                                                                    "localPath":  "./",
+                                                                    "dockerfilePath":  "./Dockerfile",
+                                                                    "mode":  "low-cost",
+                                                                    "cpu":  0.25,
+                                                                    "mem":  0.5,
+                                                                    "minNum":  0,
+                                                                    "maxNum":  2,
+                                                                    "envVariables":  {
+                                                                                         "HOST":  "0.0.0.0",
+                                                                                         "PORT":  "80",
+                                                                                         "STORAGE_DRIVER":  "memory"
+                                                                                     }
+                                                                }
+                                                 }
+                                  }
+                  },
+    "cloudrun":  {
+                     "name":  "leisure-python"
+                 }
 }
