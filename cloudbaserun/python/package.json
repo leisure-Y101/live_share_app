@@ -1,0 +1,16 @@
+{
+  "name": "live-location-share-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Persistent backend for a WeChat mini program real-time location sharing app.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "install:startup": "powershell -ExecutionPolicy Bypass -File .\\scripts\\install-startup-task.ps1",
+    "uninstall:startup": "powershell -ExecutionPolicy Bypass -File .\\scripts\\uninstall-startup-task.ps1"
+  },
+  "dependencies": {
+    "mysql2": "^3.15.2"
+  }
+}
